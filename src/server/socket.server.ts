@@ -31,6 +31,7 @@ type TOptions <
 	server									: FastifyInstance
 	logLevel          			?:TLogLevel
 	pingInterval						?:number
+	shouldHandleUpgrade		?:(request:FastifyRequest) => boolean | Promise<boolean>
 	getLobbyFromRequest			: (request:FastifyRequest) => Promise<GLobby|null|string>
 	createHandleFromRequest	?:(request:FastifyRequest, lobby:GLobby) => Promise<Omit<GHandle, "ws" | "hasSharedEntities">|null|string>
 	webSocketServerOptions	?:typeof WebSocketServer.prototype.options
@@ -47,7 +48,7 @@ export function createServerSocket <
 > ( options:TOptions ) {
 	const serverStartTime = Date.now()
 	// Extract options
-	const { server, getLobbyFromRequest, createHandleFromRequest, webSocketServerOptions } = options
+	const { server, shouldHandleUpgrade, getLobbyFromRequest, createHandleFromRequest, webSocketServerOptions } = options
 	// Default log level
 	let { logLevel } = options
 	logLevel ||= 0
@@ -162,6 +163,8 @@ export function createServerSocket <
 	async function serverUpgradeHandler ( request:FastifyRequest, socket:stream.Duplex, head:Buffer ) {
 		//
 		try {
+			if ( shouldHandleUpgrade && !await shouldHandleUpgrade( request ) )
+				return
 			// Create lobby from request
 			let lobby = await getLobbyFromRequest( request )
 			// Invalid lobby

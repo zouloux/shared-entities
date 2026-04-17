@@ -50,11 +50,11 @@ server.listen({ host: '0.0.0.0', port })
 const serverSocket = createServerSocket({
 	server,
 	pingInterval: 500,
+	shouldHandleUpgrade (request) {
+		return request.url.startsWith('/ws/')
+	},
 	async getLobbyFromRequest (request) {
 		const { url } = request
-		// Trying to do a websocket request on the wrong endpoint
-		if ( !url.startsWith('/ws/') )
-			return null
 		// Extract lobby id from url
 		const key = url.split('/ws/', 2)[1] ?? ""
 		// Return lobby for this key
